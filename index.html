@@ -1,0 +1,2715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tempo Learns Music</title>
+<!-- PWA / Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tempo Learns Music">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#002a30">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Tempo+Learns+Music%22%2C%22short_name%22%3A%22Tempo%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23002a30%22%2C%22theme_color%22%3A%22%23002a30%22%2C%22icons%22%3A%5B%5D%7D">
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@700;800&family=Caveat:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: linear-gradient(150deg, #002a30 0%, #004e5c 28%, #007a8e 62%, #00b2c8 100%);
+  min-height: 100vh;
+  font-family: 'Nunito', 'Arial Rounded MT Bold', Arial, sans-serif;
+  color: white;
+  overflow-x: hidden;
+  padding-bottom: 30px;
+}
+
+/* ── HEADER ── */
+#header {
+  text-align: center;
+  padding: 16px 20px 10px;
+}
+
+#header h1 {
+  font-family: 'Caveat', cursive;
+  font-weight: 800;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  color: #ffd700;
+  text-shadow: 0 0 24px rgba(255,215,0,0.55), 0 2px 0 rgba(0,0,0,0.35);
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
+}
+#game-subtitle {
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.78);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+#controls {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ctrl-box {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 14px;
+  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.ctrl-label {
+  font-size: 0.8rem;
+  color: #aac4ff;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.toggle-btn {
+  background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,255,255,0.22);
+  color: #ddd;
+  padding: 6px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: 'Nunito', inherit;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.2px;
+}
+
+/* Clef symbol rendered in music font */
+.clef-sym {
+  font-family: 'Noto Sans Symbols 2', serif;
+  font-size: 1.4rem;
+  line-height: 1;
+  font-weight: normal;
+}
+/* Larger version displayed inside the staff area */
+.staff-clef-sym {
+  font-size: 4rem;
+  color: #444;
+  display: block;
+}
+.toggle-btn:hover { background: rgba(255,255,255,0.22); color: white; }
+.toggle-btn.active {
+  background: #ffd700;
+  border-color: #ffd700;
+  color: #1a1040;
+  box-shadow: 0 0 10px rgba(255,215,0,0.5);
+}
+
+select {
+  background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+select option { background: #1a1040; color: white; }
+
+/* ── MAIN GAME AREA ── */
+#game-area {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 14px;
+  padding: 12px 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Tempo panel */
+#tempo-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 18px;
+  padding: 16px 20px;
+  min-width: 110px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+#tempo-emoji {
+  font-size: 3.8rem;
+  animation: idle-bob 2.2s ease-in-out infinite;
+  display: block;
+  line-height: 1;
+}
+@keyframes idle-bob {
+  0%,100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-8px) rotate(2deg); }
+}
+
+#tempo-name {
+  font-size: 1rem;
+  color: #ffd700;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+}
+
+#hearts-row {
+  display: flex;
+  gap: 4px;
+  font-size: 1.2rem;
+}
+
+/* Staff panel */
+#staff-panel {
+  flex: 1;
+  max-width: 560px;
+  background: white;
+  border-radius: 20px;
+  padding: 16px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 260px;
+  position: relative;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+}
+
+#staff-panel .clef-badge {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 0.7rem;
+  color: #888;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Clef + staff lines side by side */
+#staff-display {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: 18px; /* clear the badge */
+}
+
+/* The clef symbol on the left of the staff */
+.staff-clef-sym {
+  font-size: 5.2rem;
+  color: #111;
+  line-height: 0.82;
+  flex-shrink: 0;
+  margin-right: 2px;
+  position: relative;
+  top: 0px;
+  align-self: center;
+}
+
+/* SVG staff wrapper fills remaining width */
+#staff-svg-wrap {
+  flex: 1;
+  min-width: 0;
+}
+#staff-svg {
+  width: 100%;
+  height: 210px;
+  overflow: visible;
+  display: block;
+}
+
+/* Note name label shown below the staff */
+#note-label {
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  width: 100%;
+  margin-top: 6px;
+  min-height: 1.4rem;
+  letter-spacing: 0.5px;
+}
+
+/* Clef mode hint */
+#staff-hint {
+  font-size: 0.72rem;
+  color: #bbb;
+  text-align: right;
+  width: 100%;
+  margin-top: 2px;
+}
+
+/* Prizes panel */
+#prizes-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 18px;
+  padding: 14px 14px;
+  min-width: 100px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+#prizes-panel .panel-title {
+  font-size: 0.75rem;
+  color: #aac4ff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 800;
+}
+
+.prize-hint {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.75);
+  text-align: center;
+  line-height: 1.4;
+  margin-top: 4px;
+  font-weight: 700;
+}
+.prize-hint-gold {
+  color: #ffd700;
+  font-weight: 800;
+  font-size: 0.8rem;
+  text-shadow: 0 0 8px rgba(255,215,0,0.4);
+}
+
+.prize-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.prize-lvl-lbl {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.35);
+  width: 10px;
+  text-align: center;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+.prize-slot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255,255,255,0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.18);
+  position: relative;
+  transition: all 0.3s;
+}
+.prize-slot.earned {
+  border: none;
+  background: radial-gradient(circle, #ffe066 30%, #f5a623 100%);
+  box-shadow: 0 0 12px rgba(255,210,0,0.6);
+  color: #1a1040;
+  font-size: 1.5rem;
+}
+
+/* ── PIANO SECTION ── */
+#piano-section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+#piano-wrapper {
+  background: rgba(0,0,0,0.38);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 18px 18px 36px;
+  overflow-x: auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 6px 28px rgba(0,0,0,0.3);
+}
+
+/* The outer piano div — position:relative, sized by JS */
+#piano {
+  position: relative;
+  margin: 0 auto;
+}
+
+/* White keys */
+.wkey {
+  position: absolute;
+  bottom: 0;
+  background: linear-gradient(to bottom, #f9f9f9 70%, #e8e8e8 100%);
+  border: 1px solid #aaa;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  cursor: pointer;
+  transition: background 0.1s, transform 0.08s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 5px;
+  user-select: none;
+}
+.wkey:hover:not(.grayed) { background: linear-gradient(to bottom, #fffde0 70%, #f0e88a 100%); }
+.wkey:active:not(.grayed) { transform: scaleY(0.98); background: #c8f0c8; }
+.wkey.grayed {
+  background: linear-gradient(to bottom, #c8c8c8 70%, #b0b0b0 100%);
+  border-color: #999;
+  cursor: not-allowed;
+}
+.wkey.middle-c { background: linear-gradient(to bottom, #fff8dc 70%, #ffe88a 100%); }
+.wkey.middle-c:hover:not(.grayed) { background: linear-gradient(to bottom, #fffacc 70%, #ffd060 100%); }
+
+.key-lbl {
+  font-size: 9px;
+  font-weight: bold;
+  color: #888;
+  pointer-events: none;
+  line-height: 1;
+}
+.wkey.grayed .key-lbl { color: #bbb; }
+.wkey.middle-c .key-lbl { color: #c07000; }
+
+/* Black keys — top is set per-element in JS to align with white key tops */
+.bkey {
+  position: absolute;
+  background: linear-gradient(to bottom, #1a1a1a 0%, #444 100%);
+  border-radius: 0 0 5px 5px;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 5px;
+  transition: background 0.1s;
+  user-select: none;
+}
+.bkey:hover:not(.grayed) { background: linear-gradient(to bottom, #333 0%, #666 100%); }
+.bkey:active:not(.grayed) { background: linear-gradient(to bottom, #2a6e2a 0%, #4caf50 100%); }
+.bkey.grayed {
+  background: linear-gradient(to bottom, #777 0%, #999 100%);
+  cursor: not-allowed;
+}
+
+/* Middle C ledger marker */
+#middle-c-marker {
+  position: absolute;
+  bottom: -24px;
+  font-size: 9px;
+  color: #f5a623;
+  font-weight: bold;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Range label — sits above the piano wrapper */
+#range-label {
+  text-align: center;
+  font-size: 0.76rem;
+  color: rgba(255,255,255,0.45);
+  margin: 4px auto 6px;
+  max-width: 1100px;
+  padding: 0 20px;
+  letter-spacing: 0.3px;
+}
+
+/* Level indicator strip */
+#level-strip {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 20px 0;
+}
+.level-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: rgba(255,255,255,0.35);
+  transition: all 0.3s;
+}
+.level-dot.current {
+  border-color: #ffd700;
+  background: #ffd700;
+  color: #1a1040;
+  box-shadow: 0 0 10px rgba(255,215,0,0.5);
+}
+.level-dot.done { border-color: #4caf50; background: rgba(76,175,80,0.3); color: #4caf50; }
+
+/* ── TIMER BAR ── */
+#timer-wrap {
+  max-width: 1060px;
+  margin: 6px auto 2px;
+  padding: 0 20px;
+}
+#timer-track {
+  height: 10px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 5px;
+  overflow: hidden;
+}
+#timer-bar {
+  height: 100%;
+  width: 100%;
+  border-radius: 5px;
+  background: #4caf50;
+  transition: width 0.1s linear, background-color 0.4s;
+}
+#timer-bar.warn   { background: #ffc107; }
+#timer-bar.danger { background: #f44336; }
+
+/* ── STREAK / POINTS COUNTER ── */
+#streak-display {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+}
+#streak-display span {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+#points-display {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+}
+#points-display span {
+  color: #7ee8f5;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+/* ── TEMPO ANIMATIONS ── */
+@keyframes idle-bob {
+  0%,100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-8px) rotate(2deg); }
+}
+@keyframes tempo-jump {
+  0%   { transform: translateY(0) rotate(-2deg); }
+  25%  { transform: translateY(-28px) rotate(8deg) scale(1.1); }
+  55%  { transform: translateY(-12px) rotate(-4deg); }
+  80%  { transform: translateY(-4px) rotate(2deg); }
+  100% { transform: translateY(0) rotate(-2deg); }
+}
+@keyframes tempo-fall {
+  0%   { transform: translateY(0) rotate(0deg);   opacity: 1; }
+  40%  { transform: translateY(14px) rotate(25deg); opacity: 0.9; }
+  100% { transform: translateY(70px) rotate(50deg); opacity: 0; }
+}
+#tempo-emoji.jumping { animation: tempo-jump 0.55s ease-out forwards; }
+#tempo-emoji.falling { animation: tempo-fall 0.8s ease-in forwards; }
+
+/* ── PIANO KEY STATES ── */
+.wkey.flash-correct { background: #a5d6a7 !important; }
+.wkey.flash-wrong   { background: #ef9a9a !important; }
+.bkey.flash-correct { background: #2e7d32 !important; }
+.bkey.flash-wrong   { background: #b71c1c !important; }
+
+/* ── GAME OVER OVERLAY ── */
+#gameover-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  border-radius: 16px;
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+}
+#gameover-overlay.visible { display: flex; }
+
+#gameover-box {
+  background: white;
+  border-radius: 20px;
+  padding: 28px 36px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+#gameover-emoji { font-size: 3rem; line-height: 1; }
+#gameover-title {
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #c62828;
+}
+#gameover-msg {
+  font-size: 0.95rem;
+  color: #555;
+}
+#gameover-streak {
+  font-size: 0.9rem;
+  color: #888;
+}
+#restart-btn {
+  margin-top: 10px;
+  background: #ffd700;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 28px;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  cursor: pointer;
+  color: #1a1040;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(255,215,0,0.4);
+}
+#restart-btn:hover { transform: scale(1.05); box-shadow: 0 6px 18px rgba(255,215,0,0.5); }
+
+/* ── PRIZE SLOTS (earned state with pop animation) ── */
+@keyframes prize-pop {
+  0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
+  65%  { transform: scale(1.25) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg);   opacity: 1; }
+}
+.prize-slot.earned {
+  border: none;
+  background: radial-gradient(circle at 35% 35%, #ffe566 0%, #f5a623 70%, #c07000 100%);
+  box-shadow: 0 0 14px rgba(255,180,0,0.7);
+  color: #fff;
+  font-size: 1.5rem;
+  animation: prize-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+/* ── LEVEL-UP / WIN OVERLAY ── */
+#levelup-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0,60,20,0.6);
+  border-radius: 16px;
+  z-index: 12;
+  align-items: center;
+  justify-content: center;
+}
+#levelup-overlay.visible { display: flex; }
+#levelup-overlay.win-mode { background: rgba(80,40,0,0.65); }
+
+#levelup-box {
+  background: white;
+  border-radius: 20px;
+  padding: 26px 40px 30px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+/* Character intro section inside levelup-box */
+#lu-char-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+#lu-char-emoji { font-size: 4rem; line-height: 1; display: block; }
+#lu-char-name {
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #5c6bc0;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+/* Win screen: row of characters */
+#lu-win-chars {
+  display: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 2.4rem;
+  line-height: 1;
+}
+#levelup-title {
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #2e7d32;
+}
+#levelup-overlay.win-mode #levelup-title { color: #e65100; }
+#lu-level-info {
+  font-size: 0.9rem;
+  color: #555;
+  max-width: 280px;
+  text-align: center;
+  line-height: 1.4;
+}
+#levelup-prize { font-size: 0.95rem; color: #888; }
+
+#continue-btn {
+  margin-top: 12px;
+  background: #4caf50;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 30px;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  cursor: pointer;
+  color: white;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(76,175,80,0.4);
+}
+#continue-btn:hover { transform: scale(1.05); }
+#levelup-overlay.win-mode #continue-btn { background: #f57f17; }
+
+/* ── NOTIFICATION TOAST ── */
+#notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%) scale(0.8);
+  background: rgba(30,30,30,0.92);
+  color: white;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 14px 28px;
+  border-radius: 14px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 999;
+  white-space: nowrap;
+}
+#notification.show {
+  opacity: 1;
+  transform: translate(-50%,-50%) scale(1);
+}
+
+/* ── TEMPO ON PIANO ── */
+#tempo-strip {
+  position: relative;
+  height: 18px;
+  overflow: visible;
+  margin: 0 auto;
+  z-index: 3;
+}
+
+#tempo-on-piano {
+  position: absolute;
+  bottom: -125px;
+  left: 0;
+  transform: translateX(-50%);
+  transition: left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), bottom 0.18s ease;
+  z-index: 5;
+  pointer-events: none;
+}
+
+#tempo-on-piano-emoji {
+  display: block;
+  font-size: 44px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.4));
+  user-select: none;
+}
+
+/* Gentle idle bob when Tempo is just standing on a key */
+@keyframes idle-bob-piano {
+  0%,100% { transform: translateX(-50%) translateY(0)   rotate(-1.5deg); }
+  50%      { transform: translateX(-50%) translateY(-7px) rotate(1.5deg); }
+}
+#tempo-on-piano:not(.bouncing):not(.falling-in) {
+  animation: idle-bob-piano 2.1s ease-in-out infinite;
+}
+
+@keyframes piano-bounce {
+  0%   { transform: translateX(-50%) translateY(0)     scaleX(1)    scaleY(1); }
+  18%  { transform: translateX(-50%) translateY(4px)   scaleX(1.12) scaleY(0.82); }
+  42%  { transform: translateX(-50%) translateY(-28px) scaleX(0.9)  scaleY(1.1); }
+  68%  { transform: translateX(-50%) translateY(-10px) scaleX(1)    scaleY(1); }
+  85%  { transform: translateX(-50%) translateY(-3px)  scaleX(1.04) scaleY(0.97); }
+  100% { transform: translateX(-50%) translateY(0)     scaleX(1)    scaleY(1); }
+}
+
+@keyframes piano-fall-in {
+  0%   { transform: translateX(-50%) translateY(0)    scale(1);    opacity: 1; }
+  40%  { transform: translateX(-50%) translateY(14px) scale(0.72); opacity: 0.85; }
+  80%  { transform: translateX(-50%) translateY(32px) scale(0.22); opacity: 0.4; }
+  100% { transform: translateX(-50%) translateY(42px) scale(0.05); opacity: 0; }
+}
+
+#tempo-on-piano.bouncing   { animation: piano-bounce  0.46s ease-out; }
+#tempo-on-piano.falling-in { animation: piano-fall-in 0.68s ease-in forwards; }
+
+/* ── HEART LOSE ANIMATION ── */
+@keyframes heart-lose {
+  0%   { transform: scale(1);   opacity: 1; }
+  28%  { transform: scale(1.55) translateY(-5px); opacity: 1; }
+  100% { transform: scale(0.2)  translateY(-28px); opacity: 0; }
+}
+.heart.losing { animation: heart-lose 0.55s ease-in forwards; }
+
+/* ── HOLE OPEN ANIMATION ── */
+@keyframes hole-open {
+  0%   { box-shadow: inset 0 0 0 0px rgba(0,0,0,0); }
+  40%  { box-shadow: inset 0 0 12px 30px rgba(0,0,0,0.95); }
+  100% { box-shadow: inset 0 0 18px 40px rgba(0,0,0,0.95); }
+}
+.wkey.hole {
+  background: radial-gradient(circle at 50% 55%, #111 18%, #444 55%, #bbb 100%) !important;
+  animation: hole-open 0.35s ease-out forwards;
+  cursor: not-allowed;
+}
+.bkey.hole {
+  background: radial-gradient(circle at 50% 55%, #000 18%, #222 55%) !important;
+  animation: hole-open 0.35s ease-out forwards;
+  cursor: not-allowed;
+}
+
+/* ── LEVEL-DOWN OVERLAY ── */
+#leveldown-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(120, 10, 10, 0.58);
+  border-radius: 16px;
+  z-index: 11;
+  align-items: center;
+  justify-content: center;
+}
+#leveldown-overlay.visible { display: flex; }
+#leveldown-box {
+  background: white;
+  border-radius: 20px;
+  padding: 28px 36px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+#leveldown-icon  { font-size: 3rem; line-height: 1; }
+#leveldown-title {
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #c62828;
+}
+#leveldown-msg  { font-size: 0.95rem; color: #555; }
+#leveldown-streak { font-size: 0.9rem; color: #888; }
+#leveldown-btn {
+  margin-top: 10px;
+  background: #ffd700;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 28px;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  cursor: pointer;
+  color: #1a1040;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(255,215,0,0.4);
+}
+#leveldown-btn:hover { transform: scale(1.05); box-shadow: 0 6px 18px rgba(255,215,0,0.5); }
+
+/* ── GAME CONTROLS BAR (below keyboard) ── */
+#game-controls-bar {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+#end-game-btn {
+  background: #e53935;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 28px;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  cursor: pointer;
+  color: white;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(229,57,53,0.4);
+}
+#end-game-btn:hover { transform: scale(1.05); box-shadow: 0 6px 18px rgba(229,57,53,0.5); }
+#see-lb-btn {
+  background: #ffd700;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 22px;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  cursor: pointer;
+  color: #1a1040;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(255,215,0,0.4);
+}
+#see-lb-btn:hover { transform: scale(1.05); box-shadow: 0 6px 18px rgba(255,215,0,0.5); }
+
+/* ── NAME ENTRY MODAL ── */
+#name-entry-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+#name-entry-overlay.visible { display: flex; }
+#name-entry-box {
+  background: white;
+  border-radius: 20px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 360px;
+  width: 90%;
+}
+#name-entry-icon { font-size: 3rem; line-height: 1; }
+#name-entry-title {
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1a237e;
+}
+#name-entry-sub { font-size: 0.95rem; color: #555; line-height: 1.5; }
+#player-name-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 1rem;
+  border: 2px solid #c5cae9;
+  border-radius: 10px;
+  outline: none;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+#player-name-input:focus { border-color: #5c6bc0; }
+#name-entry-btns { display: flex; gap: 10px; margin-top: 4px; }
+#name-submit-btn {
+  background: #5c6bc0;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 26px;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  cursor: pointer;
+  color: white;
+  transition: transform 0.15s;
+}
+#name-submit-btn:hover { transform: scale(1.05); }
+#name-skip-btn {
+  background: #eee;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  cursor: pointer;
+  color: #888;
+  transition: transform 0.15s;
+}
+#name-skip-btn:hover { transform: scale(1.05); }
+
+/* ── LEADERBOARD MODAL ── */
+#leaderboard-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+#leaderboard-overlay.visible { display: flex; }
+#leaderboard-box {
+  background: white;
+  border-radius: 20px;
+  padding: 24px 28px 28px;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 820px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+#lb-title {
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1a237e;
+}
+/* Two boards side by side */
+#lb-boards {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  align-items: flex-start;
+}
+.lb-board { flex: 1; min-width: 0; padding: 0 18px; }
+.lb-board:first-child { border-right: 2px solid #e8eaf6; }
+.lb-board-title {
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #3949ab;
+  text-align: center;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  font-size: 0.88rem;
+}
+.lb-table thead th {
+  padding: 5px 8px;
+  text-align: left;
+  color: #888;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e8eaf6;
+}
+.lb-table tbody tr { border-bottom: 1px solid #f0f0f0; }
+.lb-table tbody tr:last-child { border-bottom: none; }
+.lb-table tbody td {
+  padding: 7px 8px;
+  text-align: left;
+  color: #333;
+}
+.lb-table tbody tr.lb-champion td { font-weight: 800; color: #c07000; background: #fffde7; }
+.lb-rank  { width: 40px; font-weight: bold; }
+.lb-streak { width: 56px; text-align: right !important; font-variant-numeric: tabular-nums; }
+.lb-date  { color: #aaa; font-size: 0.78rem; }
+.lb-empty { text-align: center !important; color: #aaa; padding: 16px 0 !important; font-style: italic; font-size: 0.82rem; }
+#lb-close-btn {
+  background: #5c6bc0;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 32px;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Nunito', 'Poppins', Arial, sans-serif;
+  cursor: pointer;
+  color: white;
+  transition: transform 0.15s;
+}
+#lb-close-btn:hover { transform: scale(1.05); }
+@media (max-width: 600px) {
+  #lb-boards { flex-direction: column; }
+  .lb-board:first-child { border-right: none; border-bottom: 2px solid #e8eaf6; padding-bottom: 14px; }
+  .lb-board { padding: 10px 4px; }
+}
+/* Disabled select styling */
+select:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── SCORING TABLE (start screen + leaderboard modal) ── */
+.scoring-table-wrap {
+  background: #f5f7ff;
+  border-radius: 10px;
+  padding: 10px 14px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.scoring-table-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #5c6bc0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+.scoring-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.82rem;
+}
+.scoring-tbl th {
+  color: #888;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 3px 6px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.scoring-tbl td {
+  text-align: center;
+  padding: 3px 6px;
+  color: #333;
+}
+.scoring-tbl td:first-child { font-weight: 700; color: #5c6bc0; }
+.scoring-min-note {
+  font-size: 0.72rem;
+  color: #888;
+  text-align: center;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* ── GAME FOOTNOTE ── */
+#game-footnote {
+  text-align: center;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.4);
+  margin-top: 6px;
+  letter-spacing: 0.2px;
+}
+
+/* ── MOBILE / TOUCH ── */
+#piano-wrapper { -webkit-overflow-scrolling: touch; }
+.wkey, .bkey   { touch-action: manipulation; }
+
+@media (max-width: 780px) {
+  #game-area {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  #tempo-panel {
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    min-width: unset;
+    padding: 10px 16px;
+    gap: 12px;
+  }
+  #staff-panel  { max-width: none; min-height: 220px; }
+  #prizes-panel {
+    flex-direction: row;
+    min-width: unset;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px;
+    gap: 6px;
+  }
+  #header h1 { font-size: clamp(1rem, 4vw, 1.5rem); }
+  #controls  { gap: 8px; }
+  .toggle-btn { padding: 5px 10px; font-size: 0.82rem; }
+}
+
+@media (max-width: 520px) {
+  #staff-svg    { height: 178px; }
+  .prize-slot   { width: 24px; height: 24px; font-size: 0.75rem; }
+  #level-strip  { gap: 4px; }
+  .level-dot    { width: 24px; height: 24px; font-size: 0.66rem; }
+  #piano-wrapper { padding: 10px 10px 28px; }
+  #tempo-strip  { height: 18px; }
+}
+
+/* ── LANDSCAPE PHONE LAYOUT ── */
+@media (orientation: landscape) and (max-height: 500px) {
+  body { padding-bottom: 8px; }
+
+  /* Compact header */
+  #header { padding: 5px 14px 5px; }
+  #header h1 { font-size: clamp(1.2rem, 3vw, 1.6rem); margin-bottom: 0; }
+  #game-subtitle { display: none; }
+  #controls { gap: 6px; margin-bottom: 0; }
+  .ctrl-box { padding: 4px 10px; }
+  .toggle-btn { padding: 4px 10px; font-size: 0.8rem; }
+  select { padding: 3px 8px; font-size: 0.8rem; }
+
+  /* Two-column main layout */
+  #main-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 8px;
+    padding: 0 10px;
+    max-width: none;
+  }
+
+  /* Left column: level strip + timer + game area */
+  #left-col {
+    flex: 0 0 290px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* Right column: range label + piano + buttons */
+  #right-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* Compact level strip and timer */
+  #level-strip { padding: 3px 0 0; gap: 4px; }
+  .level-dot { width: 20px; height: 20px; font-size: 0.58rem; }
+  #timer-wrap { margin: 3px 0 2px; padding: 0; }
+
+  /* Game area fills left col */
+  #game-area {
+    flex: 1;
+    flex-direction: column;
+    padding: 4px 0;
+    gap: 5px;
+    overflow: hidden;
+  }
+
+  /* Compact tempo/stats panel */
+  #tempo-panel {
+    flex-direction: row;
+    min-width: unset;
+    padding: 5px 10px;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #tempo-emoji { font-size: 1.8rem; }
+  #tempo-name { font-size: 0.72rem; }
+  #hearts-row { font-size: 0.95rem; }
+  #streak-display { font-size: 0.7rem; }
+
+  /* Staff panel fills remaining height */
+  #staff-panel {
+    flex: 1;
+    min-height: 0;
+    max-width: none;
+    padding: 8px 12px 8px;
+  }
+  #staff-svg { height: 140px; }
+
+  /* Hide prizes in landscape — not enough room */
+  #prizes-panel { display: none !important; }
+
+  /* Right col content */
+  #range-label { margin: 4px 0 4px; padding: 0; font-size: 0.7rem; }
+  #piano-section { flex: 1; padding: 0; overflow: hidden; }
+  #piano-wrapper { padding: 10px 10px 18px; border-radius: 12px; height: 100%; box-sizing: border-box; }
+  #game-controls-bar { margin-top: 6px; flex-shrink: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <h1><span style="filter:drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 4px rgba(255,255,255,0.7));">🎵</span> Tempo Learns Music <span style="filter:drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 4px rgba(255,255,255,0.7));">🎵</span></h1>
+  <p id="game-subtitle">Teach Tempo <span style="font-size:2.76rem;line-height:1;vertical-align:middle;">🐥</span> and his friends how to read notes!</p>
+
+  <div id="controls">
+    <!-- Clef mode -->
+    <div class="ctrl-box">
+      <span class="ctrl-label">Clef</span>
+      <button class="toggle-btn active" id="btn-treble" onclick="setClef('treble')"><span class="clef-sym">&#x1D11E;</span> Treble</button>
+      <button class="toggle-btn"        id="btn-bass"   onclick="setClef('bass')"><span class="clef-sym">&#x1D122;</span> Bass</button>
+    </div>
+    <!-- Octave range -->
+    <div class="ctrl-box">
+      <span class="ctrl-label">Range</span>
+      <select id="oct-select" onchange="setRange(this.value)">
+        <option value="1">1 Octave</option>
+        <option value="2" selected>2 Octaves</option>
+      </select>
+    </div>
+    <!-- Starting level -->
+    <div class="ctrl-box">
+      <span class="ctrl-label">Level</span>
+      <select id="level-select" onchange="setStartingLevel(this.value)">
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div id="main-layout">
+<div id="left-col">
+
+<!-- LEVEL STRIP -->
+<div id="level-strip">
+  <div class="level-dot current" id="lvldot-1">1</div>
+  <div class="level-dot"         id="lvldot-2">2</div>
+  <div class="level-dot"         id="lvldot-3">3</div>
+  <div class="level-dot"         id="lvldot-4">4</div>
+  <div class="level-dot"         id="lvldot-5">5</div>
+</div>
+
+<!-- TIMER BAR -->
+<div id="timer-wrap">
+  <div id="timer-track"><div id="timer-bar"></div></div>
+</div>
+
+<!-- GAME AREA -->
+<div id="game-area">
+
+  <!-- Stats panel -->
+  <div id="tempo-panel">
+    <span id="tempo-emoji" style="display:none">🐣</span>
+    <div id="tempo-name">Chances</div>
+    <div id="hearts-row">
+      <span class="heart" id="h1">❤️</span>
+      <span class="heart" id="h2">❤️</span>
+      <span class="heart" id="h3">❤️</span>
+    </div>
+    <div id="streak-display">Streak: <span id="streak-count">0</span></div>
+    <div id="points-display">Points: <span id="points-count">0</span></div>
+  </div>
+
+  <!-- Staff (placeholder for Phase 2) -->
+  <div id="staff-panel">
+    <div class="clef-badge" id="clef-badge">Treble Clef</div>
+
+    <div id="staff-display">
+      <!-- Clef symbol sits to the left of the staff lines -->
+      <span class="clef-sym staff-clef-sym" id="staff-clef-icon">&#x1D11E;</span>
+
+      <!-- SVG staff: 5 lines, line-spacing=14px, top line at y=80, bottom at y=136 -->
+      <div id="staff-svg-wrap">
+        <svg id="staff-svg" viewBox="0 0 300 210">
+          <!-- 5 permanent staff lines -->
+          <line x1="0" y1="80"  x2="300" y2="80"  stroke="#333" stroke-width="1.4"/>
+          <line x1="0" y1="94"  x2="300" y2="94"  stroke="#333" stroke-width="1.4"/>
+          <line x1="0" y1="108" x2="300" y2="108" stroke="#333" stroke-width="1.4"/>
+          <line x1="0" y1="122" x2="300" y2="122" stroke="#333" stroke-width="1.4"/>
+          <line x1="0" y1="136" x2="300" y2="136" stroke="#333" stroke-width="1.4"/>
+          <!-- Dynamic note content (ledger lines, note head, stem, accidental) -->
+          <g id="note-group"></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Note name displayed below the staff -->
+    <div id="note-label"></div>
+    <div id="staff-hint">Treble Clef Mode</div>
+  </div>
+
+  <!-- Level Intro / Level-Up / Win Overlay -->
+  <div id="levelup-overlay">
+    <div id="levelup-box">
+      <!-- Single character (start screen + level-up) -->
+      <div id="lu-char-section">
+        <span id="lu-char-emoji"></span>
+        <div id="lu-char-name"></div>
+      </div>
+      <!-- Win screen: row of 4 characters with cheer emojis -->
+      <div id="lu-win-chars"></div>
+      <div id="levelup-title"></div>
+      <div id="lu-level-info"></div>
+      <div id="levelup-prize"></div>
+      <!-- Scoring table — shown only on start screen -->
+      <div id="lu-scoring-table" style="display:none; width:100%;">
+        <div class="scoring-table-wrap">
+          <div class="scoring-table-title">How points are scored</div>
+          <table class="scoring-tbl">
+            <thead><tr><th>Level</th><th>1 Octave</th><th>2 Octaves</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>1 pt</td><td>2 pts</td></tr>
+              <tr><td>2</td><td>2 pts</td><td>4 pts</td></tr>
+              <tr><td>3</td><td>3 pts</td><td>6 pts</td></tr>
+              <tr><td>4</td><td>4 pts</td><td>8 pts</td></tr>
+              <tr><td>5</td><td>5 pts</td><td>10 pts</td></tr>
+            </tbody>
+          </table>
+          <div class="scoring-min-note">100 points minimum to appear on leaderboard</div>
+        </div>
+      </div>
+      <button id="continue-btn" onclick="continueAfterLevelUp()">Keep Going!</button>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay (full restart — only shown at level 1) -->
+  <div id="gameover-overlay">
+    <div id="gameover-box">
+      <div id="gameover-emoji">🕳️</div>
+      <div id="gameover-title">Oh no!</div>
+      <div id="gameover-msg">Tempo fell in the hole!</div>
+      <div id="gameover-streak">Streak: <strong id="go-streak">0</strong></div>
+      <button id="restart-btn" onclick="restartGame()">Try Again!</button>
+    </div>
+  </div>
+
+  <!-- Level-Down Overlay -->
+  <div id="leveldown-overlay">
+    <div id="leveldown-box">
+      <div id="leveldown-icon">💔</div>
+      <div id="leveldown-title">0 Chances Remaining</div>
+      <div id="leveldown-msg">Restarting at Level 1</div>
+      <div id="leveldown-streak">Streak: <strong id="ld-streak">0</strong></div>
+      <button id="leveldown-btn" onclick="resumeAfterLevelDown()">Try Again!</button>
+    </div>
+  </div>
+
+  <!-- Prizes: 5 levels × 5 prizes = 25 slots accumulate as player progresses -->
+  <div id="prizes-panel">
+    <div class="panel-title">Prizes</div>
+    <div class="prize-row">
+      <span class="prize-lvl-lbl">1</span>
+      <div class="prize-slot" id="prize-L0-0">?</div><div class="prize-slot" id="prize-L0-1">?</div>
+      <div class="prize-slot" id="prize-L0-2">?</div><div class="prize-slot" id="prize-L0-3">?</div>
+      <div class="prize-slot" id="prize-L0-4">?</div>
+    </div>
+    <div class="prize-row">
+      <span class="prize-lvl-lbl">2</span>
+      <div class="prize-slot" id="prize-L1-0">?</div><div class="prize-slot" id="prize-L1-1">?</div>
+      <div class="prize-slot" id="prize-L1-2">?</div><div class="prize-slot" id="prize-L1-3">?</div>
+      <div class="prize-slot" id="prize-L1-4">?</div>
+    </div>
+    <div class="prize-row">
+      <span class="prize-lvl-lbl">3</span>
+      <div class="prize-slot" id="prize-L2-0">?</div><div class="prize-slot" id="prize-L2-1">?</div>
+      <div class="prize-slot" id="prize-L2-2">?</div><div class="prize-slot" id="prize-L2-3">?</div>
+      <div class="prize-slot" id="prize-L2-4">?</div>
+    </div>
+    <div class="prize-row">
+      <span class="prize-lvl-lbl">4</span>
+      <div class="prize-slot" id="prize-L3-0">?</div><div class="prize-slot" id="prize-L3-1">?</div>
+      <div class="prize-slot" id="prize-L3-2">?</div><div class="prize-slot" id="prize-L3-3">?</div>
+      <div class="prize-slot" id="prize-L3-4">?</div>
+    </div>
+    <div class="prize-row">
+      <span class="prize-lvl-lbl">5</span>
+      <div class="prize-slot" id="prize-L4-0">?</div><div class="prize-slot" id="prize-L4-1">?</div>
+      <div class="prize-slot" id="prize-L4-2">?</div><div class="prize-slot" id="prize-L4-3">?</div>
+      <div class="prize-slot" id="prize-L4-4">?</div>
+    </div>
+    <div class="prize-hint">10 correct in a row = prize 🎁</div>
+    <div class="prize-hint prize-hint-gold">50 correct = LEVEL UP! 🚀</div>
+  </div>
+
+</div>
+
+</div><!-- /left-col -->
+<div id="right-col">
+
+<!-- Active range label sits above the piano -->
+<div id="range-label"></div>
+<!-- PIANO -->
+<div id="piano-section">
+  <div id="piano-wrapper">
+    <!-- Tempo character strip (sits above piano keys, scrolls with them) -->
+    <div id="tempo-strip">
+      <div id="tempo-on-piano">
+        <span id="tempo-on-piano-emoji">🐣</span>
+      </div>
+    </div>
+    <div id="piano"></div>
+  </div>
+</div>
+
+<!-- ── Buttons below keyboard ── -->
+<div id="game-controls-bar">
+  <button id="end-game-btn" onclick="handleEndGame()">End Game</button>
+  <button id="see-lb-btn"   onclick="showLeaderboardModal()">🏆 See Leaderboard</button>
+</div>
+
+<div id="game-footnote">Saving points to leaderboard requires an internet connection</div>
+</div><!-- /right-col -->
+</div><!-- /main-layout -->
+
+<!-- ── Name Entry Modal ── -->
+<div id="name-entry-overlay">
+  <div id="name-entry-box">
+    <div id="name-entry-icon">🎉</div>
+    <div id="name-entry-title">Great Playing!</div>
+    <div id="name-entry-sub">You scored <strong><span id="entry-streak-display"></span> points</strong>!<br>Enter your name for the leaderboard:</div>
+    <input type="text" id="player-name-input" maxlength="30" placeholder="Your name" autocomplete="off" onkeydown="if(event.key==='Enter')submitLeaderboardEntry()">
+    <div id="name-entry-btns">
+      <button id="name-submit-btn" onclick="submitLeaderboardEntry()">Add Me</button>
+      <button id="name-skip-btn"   onclick="skipLeaderboardEntry()">Skip</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Leaderboard Modal ── -->
+<div id="leaderboard-overlay">
+  <div id="leaderboard-box">
+    <div id="lb-title">🏆 Leaderboard</div>
+    <div id="lb-boards">
+      <!-- Treble board -->
+      <div class="lb-board">
+        <div class="lb-board-title">🎼 Treble Clef</div>
+        <table class="lb-table">
+          <thead><tr><th>Rank</th><th>Name</th><th>Pts</th><th>Streak</th><th>Date</th></tr></thead>
+          <tbody id="lb-body-treble"></tbody>
+        </table>
+      </div>
+      <!-- Bass board -->
+      <div class="lb-board">
+        <div class="lb-board-title">🎸 Bass Clef</div>
+        <table class="lb-table">
+          <thead><tr><th>Rank</th><th>Name</th><th>Pts</th><th>Streak</th><th>Date</th></tr></thead>
+          <tbody id="lb-body-bass"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Scoring reference -->
+    <div class="scoring-table-wrap" style="max-width:360px;">
+      <div class="scoring-table-title">How points are scored</div>
+      <table class="scoring-tbl">
+        <thead><tr><th>Level</th><th>1 Octave</th><th>2 Octaves</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>1 pt</td><td>2 pts</td></tr>
+          <tr><td>2</td><td>2 pts</td><td>4 pts</td></tr>
+          <tr><td>3</td><td>3 pts</td><td>6 pts</td></tr>
+          <tr><td>4</td><td>4 pts</td><td>8 pts</td></tr>
+          <tr><td>5</td><td>5 pts</td><td>10 pts</td></tr>
+        </tbody>
+      </table>
+      <div class="scoring-min-note">100 points minimum to appear on leaderboard</div>
+    </div>
+    <button id="lb-close-btn" onclick="closeLeaderboard()">Close</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  LEVEL EMOJIS & LEADERBOARD CONFIG
+// ════════════════════════════════════════════════
+const LEVEL_EMOJIS = ['🐣','🐥','🧸','🐒','🐙'];
+const LEVEL_NAMES  = ['Tempo','Tempo','Bearitone','Aria','Octave'];
+const LEVEL_INFO   = [
+  'No time limit · Note names shown',
+  '10 seconds per note · Note names still shown',
+  '5 seconds per note · Note names gone — read the staff!',
+  '3 seconds per note · Read fast!',
+  '1 second per note · Go!'
+];
+
+const LEADERBOARD_KEY_TREBLE = 'tempo_lb_treble';
+const LEADERBOARD_KEY_BASS   = 'tempo_lb_bass';
+const LEADERBOARD_MIN  = 100;  // minimum points to qualify for leaderboard
+const LEADERBOARD_MAX  = 10;   // max entries stored
+
+// Google Sheets backend — set SCRIPT_URL once you have the Apps Script deployment URL
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBEiXDnVrUygEk4W5mZQblg1hgOguR-pJ8pbnJzSdsmUNnD1pxHqMKgifmELRA9Q_Dvg/exec';
+
+let totalPoints = 0;           // cumulative points this game; never resets mid-game, only on End Game
+let bestStreak  = 0;           // longest consecutive streak this session; resets on End Game
+let pendingGameReset  = false; // true while leaderboard is open after End Game
+let pendingLBKey      = null;  // which leaderboard key the current end-game entry targets
+let levelIntroIsStart = false; // true when levelup-overlay is showing the Start screen
+let startingLevel     = 1;     // level chosen before game starts; locked once game begins
+
+// ════════════════════════════════════════════════
+//  CONSTANTS & NOTE DATA
+// ════════════════════════════════════════════════
+const WW = 36;   // white key width  (px)
+const WH = 138;  // white key height (px)
+const BW = 22;   // black key width  (px)
+const BH = 88;   // black key height (px)
+
+// Semitone index within an octave (C=0)
+const SEMITONE = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+const CHROMATIC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const WHITE_NAMES = ['C','D','E','F','G','A','B'];
+// Enharmonic flat spellings for black keys (canonical sharp → display flat name)
+const ENHARMONIC_FLATS = { 'C#':'Db', 'D#':'Eb', 'F#':'Gb', 'G#':'Ab', 'A#':'Bb' };
+
+// Black key left-offset (px) from the left edge of the C key in the same octave
+// Measured as center_between_whites - BW/2
+// With WW=36: C@0, D@36, E@72, F@108, G@144, A@180, B@216, nextC@252
+// C# center ≈ 0 + WW*0.67 = 24.1  → left = 24 - 11 = 13
+// D# center ≈ 36 + WW*0.67 = 60.1 → left = 60 - 11 = 49  (wait, should be between D and E)
+// Actually: center between D(36) and E(72) = D_left + WW*0.67 = 36 + 24 = 60 → left = 60 - 11 = 49 ✓
+// F# center: between F(108) and G(144) = 108 + 24 = 132 → left = 132 - 11 = 121
+// G# center: between G(144) and A(180) = 144 + 24 = 168 → left = 168 - 11 = 157
+// A# center: between A(180) and B(216) = 180 + 24 = 204 → left = 204 - 11 = 193
+// Black key offsets centered between the two white keys they sit between
+// C# between C(0-36) and D(36-72): center=36, left=36-11=25
+// D# between D(36-72) and E(72-108): center=72, left=72-11=61  → overlaps E's left edge
+// F# between F(108-144) and G(144-180): center=144, left=133
+// G# between G(144-180) and A(180-216): center=180, left=169
+// A# between A(180-216) and B(216-252): center=216, left=205  → overlaps B's left edge
+const BLACK_OFFSET = { 'C#': 25, 'D#': 61, 'F#': 133, 'G#': 169, 'A#': 205 };
+
+// Build full key list C2–C6
+function buildKeyList() {
+  const keys = [];
+  for (let oct = 2; oct <= 6; oct++) {
+    for (let i = 0; i < CHROMATIC.length; i++) {
+      if (oct === 6 && i > 0) break; // stop at C6
+      keys.push({ note: CHROMATIC[i], octave: oct, isBlack: CHROMATIC[i].includes('#') });
+    }
+  }
+  return keys;
+}
+const ALL_KEYS = buildKeyList();
+
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+let currentClef  = 'treble';
+let octaveRange  = 2;
+
+// ════════════════════════════════════════════════
+//  RANGE LOGIC
+// ════════════════════════════════════════════════
+function toMidi(note, octave) {
+  return octave * 12 + SEMITONE[note];
+}
+
+function rangeMinMax(range) {
+  // Treble: centred above C4, extends 3 diatonic notes below (to G3)
+  // Bass:   centred below C4, extends 3 diatonic notes above (to F4)
+  if (currentClef === 'treble') {
+    return range === 1
+      ? { min: toMidi('G', 3), max: toMidi('C', 5) }  // G3–C5
+      : { min: toMidi('G', 3), max: toMidi('C', 6) }; // G3–C6
+  } else {
+    return range === 1
+      ? { min: toMidi('C', 3), max: toMidi('F', 4) }  // C3–F4
+      : { min: toMidi('C', 2), max: toMidi('F', 4) }; // C2–F4
+  }
+}
+
+function isActive(note, octave) {
+  const { min, max } = rangeMinMax(octaveRange);
+  const m = toMidi(note, octave);
+  return m >= min && m <= max;
+}
+
+// ════════════════════════════════════════════════
+//  PIANO RENDER
+// ════════════════════════════════════════════════
+function buildPiano() {
+  const pianoEl = document.getElementById('piano');
+  pianoEl.innerHTML = '';
+
+  const whiteKeys = ALL_KEYS.filter(k => !k.isBlack);
+  const blackKeys = ALL_KEYS.filter(k => k.isBlack);
+
+  const totalWidth = whiteKeys.length * WW;
+  pianoEl.style.width  = totalWidth + 'px';
+  pianoEl.style.height = WH + 'px'; // keys start at y=0; Middle C marker uses bottom:-24px below
+
+  // Map: "C4" -> left px (for black key placement)
+  const cPosMap = {};
+
+  // --- White keys ---
+  whiteKeys.forEach((k, idx) => {
+    const left = idx * WW;
+    if (k.note === 'C') cPosMap['C' + k.octave] = left;
+
+    const div = document.createElement('div');
+    div.className = 'wkey' + (k.note === 'C' && k.octave === 4 ? ' middle-c' : '');
+    div.id = keyId(k.note, k.octave);
+    div.style.cssText = `left:${left}px; width:${WW}px; height:${WH}px;`;
+
+    if (!isActive(k.note, k.octave)) div.classList.add('grayed');
+
+    // Label: C notes + middle C
+    if (k.note === 'C') {
+      const lbl = document.createElement('span');
+      lbl.className = 'key-lbl';
+      lbl.textContent = (k.octave === 4) ? 'C4' : 'C' + k.octave;
+      div.appendChild(lbl);
+    }
+
+    div.addEventListener('click', () => handleKeyClick(k));
+    pianoEl.appendChild(div);
+  });
+
+  // --- Black keys ---
+  blackKeys.forEach(k => {
+    const cLeft = cPosMap['C' + k.octave];
+    if (cLeft === undefined) return;
+    const offset = BLACK_OFFSET[k.note];
+    if (offset === undefined) return;
+
+    const left = cLeft + offset;
+    const div = document.createElement('div');
+    div.className = 'bkey';
+    div.id = keyId(k.note, k.octave);
+    // top:0 — both white and black key tops are now at y=0 in the piano div
+    div.style.cssText = `left:${left}px; width:${BW}px; height:${BH}px; top:0px;`;
+
+    if (!isActive(k.note, k.octave)) div.classList.add('grayed');
+
+    div.addEventListener('click', () => handleKeyClick(k));
+    pianoEl.appendChild(div);
+  });
+
+  // --- Middle C marker ---
+  const cLeft = cPosMap['C4'];
+  if (cLeft !== undefined) {
+    const marker = document.createElement('div');
+    marker.id = 'middle-c-marker';
+    marker.style.left = (cLeft + WW / 2) + 'px';
+    marker.textContent = '▲ Middle C';
+    pianoEl.appendChild(marker);
+  }
+
+  // --- Size the Tempo strip to match piano width, place Tempo at middle C ---
+  const stripEl = document.getElementById('tempo-strip');
+  if (stripEl) stripEl.style.width = totalWidth + 'px';
+  // Instant placement (no transition) so Tempo is correctly positioned on every rebuild
+  setTimeout(() => moveTempoPiano('C', 4, true), 0);
+
+  updateRangeLabel();
+}
+
+function keyId(note, octave) {
+  return 'k-' + note.replace('#', 's') + octave;
+}
+
+function updateRangeLabel() {
+  const { min, max } = rangeMinMax(octaveRange);
+  const active = ALL_KEYS.filter(k => isActive(k.note, k.octave));
+  const wCount = active.filter(k => !k.isBlack).length;
+  const bCount = active.filter(k =>  k.isBlack).length;
+
+  // Find note names for min/max
+  const minKey = ALL_KEYS.find(k => toMidi(k.note, k.octave) === min);
+  const maxKey = ALL_KEYS.find(k => toMidi(k.note, k.octave) === max);
+  const minStr = minKey ? minKey.note + minKey.octave : '?';
+  const maxStr = maxKey ? maxKey.note + maxKey.octave : '?';
+
+  document.getElementById('range-label').textContent =
+    `Active range: ${minStr} – ${maxStr}  ·  ${wCount} white keys  ·  ${bCount} black keys`;
+}
+
+// ════════════════════════════════════════════════
+//  CONTROLS
+// ════════════════════════════════════════════════
+function setClef(clef) {
+  currentClef = clef;
+  document.getElementById('btn-treble').classList.toggle('active', clef === 'treble');
+  document.getElementById('btn-bass').classList.toggle('active',   clef === 'bass');
+  document.getElementById('clef-badge').textContent    = clef === 'treble' ? 'Treble Clef' : 'Bass Clef';
+  document.getElementById('staff-hint').textContent    = clef === 'treble' ? 'Treble Clef' : 'Bass Clef';
+  document.getElementById('staff-clef-icon').innerHTML = clef === 'treble' ? '&#x1D11E;' : '&#x1D122;';
+  buildPiano();   // regrays keys based on new clef range
+  if (typeof generateNote === 'function') generateNote();
+}
+
+function setRange(val) {
+  octaveRange = parseFloat(val);
+  buildPiano();
+  if (typeof generateNote === 'function') generateNote();
+}
+
+// ════════════════════════════════════════════════
+//  PHASE 3 — GAME LOGIC
+// ════════════════════════════════════════════════
+
+// ── Game state ──────────────────────────────────
+let gameActive       = false;
+let streak           = 0;
+let levelStreakBase   = 0;  // streak value at start of current level; prizes use (streak - levelStreakBase)
+let delayNextTimer   = 0;   // extra ms to wait before starting timer after a prize notification
+let hearts       = 3;
+let timerDur     = 10;   // seconds; 0 = no timer (Level 1). Phase 4 sets per level.
+let timerLeft    = 0;
+let timerTick    = null; // setInterval handle
+
+// ── Hearts display ──────────────────────────────
+function updateHearts() {
+  ['h1','h2','h3'].forEach((id, i) => {
+    document.getElementById(id).textContent = i < hearts ? '❤️' : '🖤';
+  });
+}
+
+// ── Timer bar ───────────────────────────────────
+function startTimer() {
+  clearInterval(timerTick);
+  const bar = document.getElementById('timer-bar');
+  if (timerDur === 0) {
+    bar.style.width = '100%';
+    bar.className   = '';
+    return; // no countdown for Level 1
+  }
+  timerLeft = timerDur;
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  bar.className   = '';
+
+  timerTick = setInterval(() => {
+    timerLeft -= 0.1;
+    const frac = Math.max(0, timerLeft / timerDur);
+    bar.style.transition = 'width 0.1s linear';
+    bar.style.width = (frac * 100) + '%';
+    bar.className = frac < 0.25 ? 'danger' : frac < 0.5 ? 'warn' : '';
+    if (timerLeft <= 0) onTimerExpired();
+  }, 100);
+}
+
+function stopTimer() {
+  clearInterval(timerTick);
+  timerTick = null;
+}
+
+function onTimerExpired() {
+  stopTimer();
+  if (!gameActive) return;
+  const losingNum = hearts;
+  hearts--;
+  streak = 0;
+  levelStreakBase = 0;
+  document.getElementById('streak-count').textContent = '0';
+  soundTimeout();
+  // Flash staff orange, animate heart loss
+  const panel = document.getElementById('staff-panel');
+  panel.style.background = '#fff3e0';
+  setTimeout(() => { panel.style.background = ''; }, 350);
+  animateHeartLoss(losingNum, () => {
+    updateHearts();
+    if (hearts <= 0) {
+      levelDown();
+    } else {
+      generateNote();
+      startTimer();
+    }
+  });
+}
+
+// ── Correct answer ──────────────────────────────
+function onCorrectAnswer(k) {
+  stopTimer();
+  streak++;
+  if (streak > bestStreak) bestStreak = streak;
+  totalPoints += currentLevel * (octaveRange === 2 ? 2 : 1);  // points = level × octave multiplier
+  document.getElementById('streak-count').textContent = streak;
+  document.getElementById('points-count').textContent = totalPoints;
+  soundCorrect();
+  checkPrize();
+
+  // Flash key green
+  flashKey(k, 'correct');
+
+  // Tempo bounces on the correct key, side-panel emoji reacts
+  tempoBouncePiano();
+  const emo = document.getElementById('tempo-emoji');
+  emo.classList.remove('jumping', 'falling');
+  void emo.offsetWidth;
+  emo.classList.add('jumping');
+  emo.addEventListener('animationend', () => emo.classList.remove('jumping'), { once: true });
+
+  setTimeout(() => {
+    generateNote();
+    if (delayNextTimer > 0) {
+      const extra = delayNextTimer;
+      delayNextTimer = 0;
+      setTimeout(startTimer, extra);   // wait for prize notification to clear first
+    } else {
+      startTimer();
+    }
+  }, 600);
+}
+
+// ── Heart loss animation ────────────────────────
+// Animates heart #num (1–3) out; calls callback when done.
+function animateHeartLoss(num, callback) {
+  const el = document.getElementById('h' + num);
+  if (!el) { if (callback) callback(); return; }
+  el.classList.add('losing');
+  setTimeout(() => {
+    el.classList.remove('losing');
+    if (callback) callback();
+  }, 580);
+}
+
+// ── Wrong answer ────────────────────────────────
+function onWrongAnswer(k) {
+  stopTimer();
+  gameActive = false;
+  streak = 0;
+  levelStreakBase = 0;
+  document.getElementById('streak-count').textContent = '0';
+
+  // 1. Flash key red, then hole opens
+  flashKey(k, 'wrong');
+  setTimeout(() => {
+    const el = document.getElementById(keyId(k.note, k.octave));
+    if (el) { el.classList.remove('flash-wrong'); el.classList.add('hole'); }
+  }, 250);
+
+  // 2. Tempo falls in
+  tempoFallPiano();
+  soundWrong();
+
+  // 3. After fall: animate heart loss then decide what to do
+  setTimeout(() => {
+    const losingNum = hearts;   // e.g. 3 → animate h3
+    hearts--;
+    animateHeartLoss(losingNum, () => {
+      updateHearts();
+      // Remove hole from key
+      document.querySelectorAll('.hole').forEach(el => el.classList.remove('hole'));
+
+      if (hearts <= 0) {
+        // All chances gone → level down (or game over at level 1)
+        levelDown();
+      } else {
+        // Still have chances → brief pause then next note
+        resetTempoPiano();
+        gameActive = true;
+        generateNote();
+        startTimer();
+      }
+    });
+  }, 700);
+}
+
+// ── Key flash helper ────────────────────────────
+function flashKey(k, type) {
+  const el = document.getElementById(keyId(k.note, k.octave));
+  if (!el) return;
+  const cls = k.isBlack ? `bkey flash-${type}` : `wkey flash-${type}`;
+  // preserve existing classes like middle-c, grayed
+  el.classList.add(`flash-${type}`);
+  if (type === 'correct') {
+    setTimeout(() => el.classList.remove(`flash-${type}`), 500);
+  }
+  // wrong flash stays briefly then becomes hole (handled in onWrongAnswer)
+}
+
+// ── Game over ───────────────────────────────────
+function showGameOver(isTimeout) {
+  const msg = isTimeout ? 'Time ran out too many times!' : 'Tempo fell in the hole!';
+  document.getElementById('gameover-msg').textContent  = msg;
+  document.getElementById('gameover-emoji').textContent = isTimeout ? '⏰' : '🕳️';
+  document.getElementById('go-streak').textContent     = streak;
+  document.getElementById('gameover-overlay').classList.add('visible');
+}
+
+function triggerGameOver(reason) {
+  gameActive = false;
+  stopTimer();
+  const emo = document.getElementById('tempo-emoji');
+  emo.classList.remove('jumping', 'falling');
+  emo.textContent = '😵';
+  tempoFallPiano();
+  setTimeout(() => showGameOver(reason === 'timeout'), 400);
+}
+
+// ── Full restart (from win screen) ──────────────
+function restartGame() {
+  gameActive   = true;
+  streak       = 0;
+  hearts       = 3;
+  prizesEarned = [0, 0, 0, 0, 0];
+  recentNotes  = [];
+  document.getElementById('streak-count').textContent = '0';
+  updateHearts();
+
+  // Hide overlays
+  document.getElementById('gameover-overlay').classList.remove('visible');
+  document.getElementById('levelup-overlay').classList.remove('visible');
+
+  // Reset Tempo (side panel emoji + on-piano character)
+  const emo = document.getElementById('tempo-emoji');
+  emo.classList.remove('jumping', 'falling');
+  emo.textContent = LEVEL_EMOJIS[currentLevel - 1] || LEVEL_EMOJIS[0];
+  emo.style.animation = '';
+  resetTempoPiano();
+
+  // Remove any hole keys
+  document.querySelectorAll('.hole').forEach(el => el.classList.remove('hole'));
+
+  // Reset staff panel background
+  document.getElementById('staff-panel').style.background = '';
+
+  setLevel(1);
+  generateNote();
+  startTimer();
+}
+
+// ── Key click handler ──────────────────────────
+function handleKeyClick(k) {
+  if (!isActive(k.note, k.octave)) return;
+  if (!gameActive) return;
+  if (!currentNote) return;
+
+  playNote(k.note, k.octave);
+
+  const correct = k.note === currentNote.note && k.octave === currentNote.octave;
+  if (correct) {
+    moveTempoPiano(k.note, k.octave);         // animated slide to correct key
+    onCorrectAnswer(k);
+  } else {
+    moveTempoPiano(k.note, k.octave, true);   // instant snap to wrong key so fall is on that key
+    onWrongAnswer(k);
+  }
+}
+
+// ════════════════════════════════════════════════
+//  PHASE 2 — STAFF NOTE RENDERING
+// ════════════════════════════════════════════════
+
+// Staff geometry constants (match SVG)
+const TOP_LINE_Y    = 80;
+const BOTTOM_LINE_Y = 136;
+const LINE_SP       = 14;   // distance between adjacent staff lines
+const HALF_SP       = 7;    // one diatonic step = half line spacing
+const NOTE_X        = 160;  // x position of note head
+const LEDGER_HW     = 15;   // half-width of ledger lines
+
+// Diatonic position within an octave (C=0 … B=6)
+const DIATONIC = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
+
+// Top staff line reference note for each clef
+// Both share the same y=80 for their top line
+const CLEF_REF = {
+  treble: { letter:'F', octave:5 },   // F5 = top line of treble staff
+  bass:   { letter:'A', octave:3 }    // A3 = top line of bass staff
+};
+
+// Current note being shown
+let currentNote = null;
+
+// ── Note → y position ──────────────────────────
+function noteToY(letter, octave, clef) {
+  const ref     = CLEF_REF[clef];
+  const noteStep = octave * 7 + DIATONIC[letter];
+  const refStep  = ref.octave * 7 + DIATONIC[ref.letter];
+  // Positive diff → note is below reference → larger y (lower on screen)
+  return TOP_LINE_Y + (refStep - noteStep) * HALF_SP;
+}
+
+// ── SVG element helpers ─────────────────────────
+function svgEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+// ── Ledger lines ────────────────────────────────
+function drawLedgerLines(group, noteY, noteX) {
+  // Below staff: first ledger at BOTTOM_LINE_Y + LINE_SP
+  if (noteY > BOTTOM_LINE_Y) {
+    for (let ly = BOTTOM_LINE_Y + LINE_SP; ly <= noteY + 1; ly += LINE_SP) {
+      group.appendChild(svgEl('line', {
+        x1: noteX - LEDGER_HW, y1: ly, x2: noteX + LEDGER_HW, y2: ly,
+        stroke: '#333', 'stroke-width': '1.4'
+      }));
+    }
+  }
+  // Above staff: first ledger at TOP_LINE_Y - LINE_SP
+  if (noteY < TOP_LINE_Y) {
+    for (let ly = TOP_LINE_Y - LINE_SP; ly >= noteY - 1; ly -= LINE_SP) {
+      group.appendChild(svgEl('line', {
+        x1: noteX - LEDGER_HW, y1: ly, x2: noteX + LEDGER_HW, y2: ly,
+        stroke: '#333', 'stroke-width': '1.4'
+      }));
+    }
+  }
+}
+
+// ── Render a note on the staff ──────────────────
+function displayNote(noteName, octave) {
+  const group = document.getElementById('note-group');
+  group.innerHTML = '';
+
+  const letter   = noteName[0];           // 'C', 'D', 'B', etc.
+  const isSharp  = noteName.includes('#');
+  const isFlat   = noteName.includes('b');
+  const noteY    = noteToY(letter, octave, currentClef);
+  const midY     = TOP_LINE_Y + 2 * LINE_SP; // middle staff line y
+
+  // 1. Ledger lines
+  drawLedgerLines(group, noteY, NOTE_X);
+
+  // 2. Accidental (♯ or ♭) to the left of note head
+  if (isSharp || isFlat) {
+    group.appendChild(svgEl('text', {
+      x: NOTE_X - 18, y: noteY + 5,
+      'text-anchor': 'middle',
+      'font-size': '15',
+      'font-family': 'Arial, sans-serif',
+      fill: '#111'
+    })).textContent = isSharp ? '♯' : '♭';
+  }
+
+  // 3. Note head — filled ellipse, slightly rotated
+  group.appendChild(svgEl('ellipse', {
+    cx: NOTE_X, cy: noteY, rx: '7.5', ry: '5.5',
+    fill: '#111',
+    transform: `rotate(-18, ${NOTE_X}, ${noteY})`
+  }));
+
+  // 4. Stem — up if note is on/below middle line, down if above
+  const stemUp = noteY >= midY;
+  group.appendChild(svgEl('line', stemUp ? {
+    x1: NOTE_X + 6, y1: noteY - 3,
+    x2: NOTE_X + 6, y2: noteY - 32,
+    stroke: '#111', 'stroke-width': '1.6'
+  } : {
+    x1: NOTE_X - 6, y1: noteY + 3,
+    x2: NOTE_X - 6, y2: noteY + 32,
+    stroke: '#111', 'stroke-width': '1.6'
+  }));
+
+  // 5. Note label — only shown at levels 1 and 2
+  document.getElementById('note-label').textContent =
+    currentLevel <= 2 ? noteName + octave : '';
+}
+
+// Recent note history — prevents repeating the same note within 10 prompts
+let recentNotes = [];  // each entry is "note+octave", e.g. "A#4"
+
+// ── Pick a random note from the active range ────
+function generateNote() {
+  const pool = ALL_KEYS.filter(k => isActive(k.note, k.octave));
+  if (!pool.length) return;
+
+  // Exclude notes seen in the last 10 picks (fall back to full pool if needed)
+  const recentSet = new Set(recentNotes);
+  const available = pool.filter(k => !recentSet.has(k.note + k.octave));
+  const picked = (available.length ? available : pool)[Math.floor(
+    Math.random() * (available.length || pool.length))];
+
+  // Track history (max 10)
+  recentNotes.push(picked.note + picked.octave);
+  if (recentNotes.length > 10) recentNotes.shift();
+
+  // Choose sharp or flat spelling randomly for black keys
+  let displayName = picked.note;
+  if (picked.isBlack && ENHARMONIC_FLATS[picked.note] && Math.random() < 0.5) {
+    displayName = ENHARMONIC_FLATS[picked.note];
+  }
+
+  currentNote = { ...picked, displayNote: displayName };
+  displayNote(displayName, picked.octave);
+  // Tempo stays on the last-pressed key — only resets on wrong answer, level change, or restart
+}
+
+// ════════════════════════════════════════════════
+//  PHASE 4 — LEVELS, PRIZES, SOUNDS
+// ════════════════════════════════════════════════
+
+// ── Prize definitions (5 levels × 5 prizes) ────
+const PRIZES = [
+  ['🥕','🎵','🎸','🍰','💎'],   // Level 1: carrot, coin, guitar, cake, diamond
+  ['🍓','🎶','🎹','🍦','🏆'],   // Level 2: strawberry, coin, piano, ice cream, trophy
+  ['🥦','🎼','🎺','🍩','⭐'],   // Level 3: broccoli, coin, trumpet, donut, star
+  ['🍇','🎤','🥁','🧁','👑'],   // Level 4: grapes, coin, drums, cupcake, crown
+  ['🌽','🎻','🎷','🍫','🌟'],   // Level 5: corn, violin, saxophone, chocolate, shooting star
+];
+
+const PRIZE_NAMES = [
+  ['Carrot!','Music Coin!','Guitar!','Cake!','Diamond! ✨'],
+  ['Strawberry!','Music Coin!','Piano!','Ice Cream!','Trophy! 🏆'],
+  ['Broccoli!','Music Coin!','Trumpet!','Donut!','Star! ⭐'],
+  ['Grapes!','Music Coin!','Drums!','Cupcake!','Crown! 👑'],
+  ['Corn!','Music Coin!','Saxophone!','Chocolate!','YOU WIN! 🌟'],
+];
+
+// Timer duration (seconds) per level; 0 = no timer
+const LEVEL_TIMERS = [0, 10, 5, 3, 1];
+
+// ── Level state ─────────────────────────────────
+let currentLevel  = 1;
+let prizesEarned  = [0, 0, 0, 0, 0]; // prizes earned per level
+
+// ── Set level ───────────────────────────────────
+function setLevel(n) {
+  currentLevel = n;
+  timerDur     = LEVEL_TIMERS[n - 1];
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById(`lvldot-${i}`);
+    dot.className = 'level-dot' +
+      (i < n ? ' done' : i === n ? ' current' : '');
+  }
+  // Swap level emoji on piano and side panel
+  const lvlEmoji = LEVEL_EMOJIS[n - 1];
+  const pianoEmo = document.getElementById('tempo-on-piano-emoji');
+  if (pianoEmo) pianoEmo.textContent = lvlEmoji;
+  const sideEmo = document.getElementById('tempo-emoji');
+  if (sideEmo && sideEmo.textContent !== '😵') sideEmo.textContent = lvlEmoji;
+  updatePrizeDisplay();
+}
+
+// ── Prize display — show ALL 25 slots across all 5 levels ────────
+function updatePrizeDisplay() {
+  for (let lvl = 0; lvl < 5; lvl++) {
+    const earned = prizesEarned[lvl];
+    for (let i = 0; i < 5; i++) {
+      const slot = document.getElementById(`prize-L${lvl}-${i}`);
+      if (!slot) continue;
+      slot.classList.remove('earned');
+      if (i < earned) {
+        slot.textContent = PRIZES[lvl][i];
+        void slot.offsetWidth;
+        slot.classList.add('earned');
+      } else {
+        slot.textContent = '?';
+      }
+    }
+  }
+}
+
+// ── Award a prize ────────────────────────────────
+function awardPrize(prizeIdx) {
+  const lvlIdx = currentLevel - 1;
+  prizesEarned[lvlIdx] = Math.max(prizesEarned[lvlIdx], prizeIdx + 1);
+
+  const slot = document.getElementById(`prize-L${lvlIdx}-${prizeIdx}`);
+  if (!slot) return;
+  slot.classList.remove('earned');
+  slot.textContent = PRIZES[lvlIdx][prizeIdx];
+  void slot.offsetWidth;
+  slot.classList.add('earned');
+
+  soundPrize();
+
+  if (prizeIdx === 4) {
+    // 5th prize → level up sequence
+    stopTimer();
+    gameActive = false;
+    setTimeout(() => showLevelUpScreen(), 900);
+  } else {
+    delayNextTimer = 1200;  // notify shows 1800ms; timer fires after 600ms, so wait 1200ms extra
+    notify(`${PRIZES[lvlIdx][prizeIdx]} ${PRIZE_NAMES[lvlIdx][prizeIdx]}`);
+  }
+}
+
+// ── Check prize milestones after each correct answer ──
+function checkPrize() {
+  const levelStreak = streak - levelStreakBase;  // consecutive correct within this level
+  if (levelStreak > 0 && levelStreak % 10 === 0) {
+    const prizeIdx = (levelStreak / 10) - 1;    // 10→0, 20→1, 30→2, 40→3, 50→4
+    if (prizeIdx <= 4) awardPrize(prizeIdx);
+  }
+}
+
+// ── Level-up screen ──────────────────────────────
+function showLevelUpScreen() {
+  const lvlIdx = currentLevel - 1;
+  const isWin  = currentLevel === 5;
+  levelIntroIsStart = false;
+  document.getElementById('lu-scoring-table').style.display = 'none';
+
+  const charSection = document.getElementById('lu-char-section');
+  const winChars    = document.getElementById('lu-win-chars');
+
+  if (isWin) {
+    charSection.style.display = 'none';
+    winChars.style.display    = 'flex';
+    winChars.innerHTML = '🎉 &nbsp; 🐥 &nbsp; 🧸 &nbsp; 🐒 &nbsp; 🐙 &nbsp; 🎉';
+    document.getElementById('levelup-title').textContent = 'You Win! 🌟';
+    document.getElementById('lu-level-info').textContent = 'All of Tempo\'s friends are proud of you!';
+    document.getElementById('levelup-prize').textContent = '';
+    document.getElementById('continue-btn').textContent  = 'Play Again!';
+    document.getElementById('levelup-overlay').classList.add('win-mode');
+  } else {
+    const nextLvl = currentLevel + 1;
+    charSection.style.display = 'flex';
+    winChars.style.display    = 'none';
+    document.getElementById('lu-char-emoji').textContent = LEVEL_EMOJIS[nextLvl - 1];
+    document.getElementById('lu-char-name').textContent  = LEVEL_NAMES[nextLvl - 1];
+    document.getElementById('levelup-title').textContent = `Level ${nextLvl}`;
+    document.getElementById('lu-level-info').textContent = LEVEL_INFO[nextLvl - 1];
+    document.getElementById('levelup-prize').textContent =
+      `You earned: ${PRIZES[lvlIdx][4]} ${PRIZE_NAMES[lvlIdx][4]}`;
+    document.getElementById('continue-btn').textContent  = 'Keep Going!';
+    document.getElementById('levelup-overlay').classList.remove('win-mode');
+  }
+
+  document.getElementById('levelup-overlay').classList.add('visible');
+  soundLevelUp();
+}
+
+// ── Level selector helpers ──────────────────────
+function setLevelSelectDisabled(disabled) {
+  const sel = document.getElementById('level-select');
+  if (sel) sel.disabled = disabled;
+}
+function setStartingLevel(val) {
+  startingLevel = parseInt(val, 10);
+  // Update start screen live if it's currently showing
+  if (levelIntroIsStart) {
+    const lvl = startingLevel;
+    document.getElementById('lu-char-emoji').textContent = LEVEL_EMOJIS[lvl - 1];
+    document.getElementById('lu-char-name').textContent  = LEVEL_NAMES[lvl - 1];
+    document.getElementById('levelup-title').textContent = 'Level ' + lvl;
+    document.getElementById('lu-level-info').textContent = LEVEL_INFO[lvl - 1];
+  }
+}
+
+// ── Start screen (shown on page load and after End Game reset) ──
+function showStartScreen() {
+  levelIntroIsStart = true;
+  const lvl = startingLevel;
+  document.getElementById('lu-char-section').style.display = 'flex';
+  document.getElementById('lu-win-chars').style.display    = 'none';
+  document.getElementById('lu-char-emoji').textContent     = LEVEL_EMOJIS[lvl - 1];
+  document.getElementById('lu-char-name').textContent      = LEVEL_NAMES[lvl - 1];
+  document.getElementById('levelup-title').textContent     = 'Level ' + lvl;
+  document.getElementById('lu-level-info').textContent     = LEVEL_INFO[lvl - 1];
+  document.getElementById('levelup-prize').textContent     = '';
+  document.getElementById('lu-scoring-table').style.display = 'block';
+  document.getElementById('continue-btn').textContent      = 'Start Game';
+  document.getElementById('levelup-overlay').classList.remove('win-mode');
+  document.getElementById('levelup-overlay').classList.add('visible');
+}
+
+function continueAfterLevelUp() {
+  document.getElementById('levelup-overlay').classList.remove('visible');
+
+  if (levelIntroIsStart) {
+    // Starting the game from Start Game screen — use the chosen starting level
+    levelIntroIsStart = false;
+    setLevelSelectDisabled(true);   // lock level selector for the duration of the game
+    streak          = 0;
+    levelStreakBase  = 0;
+    hearts          = 3;
+    prizesEarned = [0, 0, 0, 0, 0];
+    recentNotes  = [];
+    document.getElementById('streak-count').textContent = '0';
+    updateHearts();
+    updatePrizeDisplay();
+    const emo = document.getElementById('tempo-emoji');
+    emo.classList.remove('jumping', 'falling');
+    emo.style.animation = '';
+    resetTempoPiano();
+    setLevel(startingLevel);
+    gameActive = true;
+    generateNote();
+    startTimer();
+    return;
+  }
+
+  if (currentLevel === 5) {
+    // Win → show start screen (full reset)
+    fullResetGame();
+    return;
+  }
+
+  const nextLevel = currentLevel + 1;
+  levelStreakBase = streak;   // preserve streak; prizes reset relative to this baseline
+  hearts      = 3;
+  gameActive  = true;
+  recentNotes = [];
+  updateHearts();
+
+  const emo = document.getElementById('tempo-emoji');
+  emo.classList.remove('jumping', 'falling');
+  emo.textContent = LEVEL_EMOJIS[currentLevel - 1] || LEVEL_EMOJIS[0];
+  emo.style.animation = '';
+  resetTempoPiano();
+
+  setLevel(nextLevel);
+  generateNote();
+  startTimer();
+}
+
+// ── Level down (3 wrong answers or 3 timeouts) ──────────────────────
+let levelDownTarget = 1;  // level to resume at when "Try Again" is clicked
+
+function levelDown() {
+  stopTimer();
+  gameActive = false;
+
+  // Clear prizes for the level we're leaving
+  prizesEarned[currentLevel - 1] = 0;
+  updatePrizeDisplay();
+
+  // At level 1, restart at level 1 (can't go lower)
+  levelDownTarget = Math.max(1, currentLevel - 1);
+
+  const msg = currentLevel === 1
+    ? 'Restarting at Level 1!'
+    : `Restarting at Level ${levelDownTarget}`;
+
+  document.getElementById('leveldown-msg').textContent    = msg;
+  document.getElementById('ld-streak').textContent        = streak;
+  document.getElementById('leveldown-overlay').classList.add('visible');
+}
+
+function resumeAfterLevelDown() {
+  document.getElementById('leveldown-overlay').classList.remove('visible');
+
+  const target     = levelDownTarget;
+  const fromLevel  = currentLevel;   // still the level we just failed
+  // Only wipe all prizes when failing at Level 1 (can't go lower — true restart).
+  // For Level 2+ drops, levelDown() already cleared just that level's prizes.
+  if (fromLevel === 1) {
+    prizesEarned = [0, 0, 0, 0, 0];
+  }
+
+  gameActive      = true;
+  streak          = 0;
+  levelStreakBase  = 0;
+  hearts          = 3;
+  recentNotes     = [];
+  document.getElementById('streak-count').textContent = '0';
+  updateHearts();
+
+  const emo = document.getElementById('tempo-emoji');
+  emo.classList.remove('jumping', 'falling');
+  emo.textContent = LEVEL_EMOJIS[currentLevel - 1] || LEVEL_EMOJIS[0];
+  emo.style.animation = '';
+  resetTempoPiano();
+
+  document.querySelectorAll('.hole').forEach(el => el.classList.remove('hole'));
+  document.getElementById('staff-panel').style.background = '';
+
+  setLevel(target);
+  generateNote();
+  startTimer();
+}
+
+// ── Notification toast ───────────────────────────
+function notify(msg) {
+  const el = document.getElementById('notification');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ── Sound effects (Web Audio API) ────────────────
+let _audioCtx = null;
+function getAudio() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+}
+function beep(freq, dur, type = 'sine', vol = 0.25, delay = 0) {
+  try {
+    const ctx = getAudio();
+    const t   = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = type; osc.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t); osc.stop(t + dur);
+  } catch (e) {}
+}
+function soundCorrect() { beep(523,.12); beep(659,.15,'sine',.25,.09); }
+function soundWrong()   { beep(220,.25,'sawtooth',.2); beep(160,.3,'sawtooth',.2,.2); }
+function soundPrize()   { [523,659,784,1047].forEach((f,i) => beep(f,.18,'sine',.25,i*.09)); }
+function soundLevelUp() { [523,659,784,1047,1319].forEach((f,i) => beep(f,.22,'sine',.28,i*.11)); }
+function soundTimeout() { beep(330,.2,'triangle',.2); }
+
+// ════════════════════════════════════════════════
+//  NOTE PLAYBACK
+// ════════════════════════════════════════════════
+
+// Equal temperament: MIDI 69 = A4 = 440 Hz
+// Our MIDI formula: (octave+1)*12 + semitone  → C4 = 60, A4 = 69 ✓
+function noteFrequency(note, octave) {
+  const midi = (octave + 1) * 12 + SEMITONE[note];
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function playNote(note, octave) {
+  try {
+    const ctx  = getAudio();
+    const freq = noteFrequency(note, octave);
+    const t    = ctx.currentTime;
+
+    // Triangle + sine harmonic for a warm piano-ish tone
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.type = 'triangle'; osc1.frequency.value = freq;
+    osc2.type = 'sine';     osc2.frequency.value = freq * 2; // octave harmonic, quieter
+
+    const g2 = ctx.createGain();
+    osc2.disconnect(); osc2.connect(g2); g2.connect(ctx.destination);
+    g2.gain.setValueAtTime(0.08, t);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+
+    gain.gain.setValueAtTime(0.32, t);
+    gain.gain.setValueAtTime(0.26, t + 0.025); // short attack tail
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
+
+    osc1.start(t); osc1.stop(t + 1.5);
+    osc2.start(t); osc2.stop(t + 1.2);
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════════════
+//  TEMPO ON PIANO — POSITION & ANIMATION
+// ════════════════════════════════════════════════
+
+// Return the horizontal center (px) of a piano key within #piano
+function getKeyCenter(note, octave) {
+  const el = document.getElementById(keyId(note, octave));
+  if (!el) return null;
+  const left = parseFloat(el.style.left) || 0;
+  return left + (note.includes('#') ? BW / 2 : WW / 2);
+}
+
+// Move Tempo to the position above a given key.
+// instant=true skips the CSS transition (for initial placement / resets).
+function moveTempoPiano(note, octave, instant) {
+  const x  = getKeyCenter(note, octave);
+  if (x === null) return;
+  const el = document.getElementById('tempo-on-piano');
+  if (!el) return;
+  // White keys: emoji near bottom of key (-125px); black keys: higher up (-75px)
+  const newBottom = note.includes('#') ? '-75px' : '-125px';
+  if (instant) {
+    el.style.transition = 'none';
+    el.style.left   = x + 'px';
+    el.style.bottom = newBottom;
+    void el.offsetWidth; // force reflow
+    el.style.transition = '';
+  } else {
+    el.style.left   = x + 'px';
+    el.style.bottom = newBottom;
+  }
+}
+
+// Bounce animation (correct answer)
+function tempoBouncePiano() {
+  const el = document.getElementById('tempo-on-piano');
+  if (!el) return;
+  el.classList.remove('bouncing', 'falling-in');
+  void el.offsetWidth;
+  el.classList.add('bouncing');
+  el.addEventListener('animationend', () => el.classList.remove('bouncing'), { once: true });
+}
+
+// Fall-into-hole animation (wrong answer)
+function tempoFallPiano() {
+  const el = document.getElementById('tempo-on-piano');
+  if (!el) return;
+  el.classList.remove('bouncing');
+  void el.offsetWidth;
+  el.classList.add('falling-in');
+}
+
+// Reset: snap Tempo back to middle C instantly, restore visibility
+function resetTempoPiano() {
+  const el = document.getElementById('tempo-on-piano');
+  if (!el) return;
+  el.classList.remove('bouncing', 'falling-in');
+  void el.offsetWidth;
+  el.style.opacity = '1';
+  moveTempoPiano('C', 4, true);
+}
+
+// ════════════════════════════════════════════════
+//  LEADERBOARD
+// ════════════════════════════════════════════════
+
+function getLBKey() {
+  return currentClef === 'bass' ? LEADERBOARD_KEY_BASS : LEADERBOARD_KEY_TREBLE;
+}
+function loadLeaderboard(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); }
+  catch(e) { return []; }
+}
+function saveLeaderboard(entries, key) {
+  localStorage.setItem(key, JSON.stringify(entries));
+}
+function qualifiesForLeaderboard(n, key) {
+  if (n < LEADERBOARD_MIN) return false;
+  const entries = loadLeaderboard(key);
+  return entries.length < LEADERBOARD_MAX || n > entries[entries.length - 1].points;
+}
+function addLeaderboardEntry(name, n, streak, key) {
+  const entries = loadLeaderboard(key);
+  const date = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  entries.push({ name: name.substring(0, 30), points: n, streak, date });
+  entries.sort((a, b) => b.points - a.points);
+  if (entries.length > LEADERBOARD_MAX) entries.length = LEADERBOARD_MAX;
+  saveLeaderboard(entries, key);
+}
+
+// ── Google Sheets remote functions ──────────────
+async function saveEntryRemote(name, points, streak, clef) {
+  if (!SCRIPT_URL) return;
+  try {
+    const date = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ name, points, streak, clef, date })
+    });
+  } catch(e) { /* offline — local copy already saved */ }
+}
+async function loadLeaderboardRemote() {
+  if (!SCRIPT_URL) return;
+  try {
+    const res  = await fetch(SCRIPT_URL);
+    const data = await res.json();
+    if (data.treble) saveLeaderboard(data.treble, LEADERBOARD_KEY_TREBLE);
+    if (data.bass)   saveLeaderboard(data.bass,   LEADERBOARD_KEY_BASS);
+  } catch(e) { /* offline — show local copy */ }
+}
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function renderLBBoard(tbodyId, key) {
+  const entries = loadLeaderboard(key);
+  const tbody   = document.getElementById(tbodyId);
+  if (!tbody) return;
+  if (entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="lb-empty">No entries yet —<br>score 50+ notes to qualify!</td></tr>';
+  } else {
+    tbody.innerHTML = entries.map((e, i) =>
+      `<tr class="${i === 0 ? 'lb-champion' : ''}">
+        <td class="lb-rank">${i === 0 ? '🏆' : '#' + (i + 1)}</td>
+        <td>${escapeHtml(e.name)}</td>
+        <td class="lb-streak">${e.points}</td>
+        <td class="lb-streak">${e.streak || 0}</td>
+        <td class="lb-date">${escapeHtml(e.date)}</td>
+      </tr>`
+    ).join('');
+  }
+}
+async function showLeaderboardModal() {
+  document.getElementById('leaderboard-overlay').classList.add('visible');
+  await loadLeaderboardRemote();   // refresh from Google Sheets if online
+  renderLBBoard('lb-body-treble', LEADERBOARD_KEY_TREBLE);
+  renderLBBoard('lb-body-bass',   LEADERBOARD_KEY_BASS);
+}
+function closeLeaderboard() {
+  document.getElementById('leaderboard-overlay').classList.remove('visible');
+  if (pendingGameReset) {
+    pendingGameReset = false;
+    fullResetGame();
+  }
+}
+function handleEndGame() {
+  stopTimer();
+  gameActive       = false;
+  pendingGameReset = true;
+  pendingLBKey     = getLBKey();
+  // Hide any active overlays
+  ['levelup-overlay','gameover-overlay','leveldown-overlay'].forEach(id => {
+    document.getElementById(id)?.classList.remove('visible');
+  });
+  if (qualifiesForLeaderboard(totalPoints, pendingLBKey)) {
+    document.getElementById('entry-streak-display').textContent = totalPoints;
+    document.getElementById('name-entry-overlay').classList.add('visible');
+    setTimeout(() => document.getElementById('player-name-input').focus(), 50);
+  } else {
+    showLeaderboardModal();
+  }
+}
+async function submitLeaderboardEntry() {
+  const input = document.getElementById('player-name-input');
+  const name  = input.value.trim() || 'Anonymous';
+  const key   = pendingLBKey || LEADERBOARD_KEY_TREBLE;
+  addLeaderboardEntry(name, totalPoints, bestStreak, key);        // save locally first
+  saveEntryRemote(name, totalPoints, bestStreak, currentClef);   // then push to Google Sheets
+  input.value = '';
+  document.getElementById('name-entry-overlay').classList.remove('visible');
+  showLeaderboardModal();
+}
+function skipLeaderboardEntry() {
+  document.getElementById('player-name-input').value = '';
+  document.getElementById('name-entry-overlay').classList.remove('visible');
+  showLeaderboardModal();
+}
+function fullResetGame() {
+  totalPoints     = 0;
+  bestStreak      = 0;
+  streak          = 0;
+  levelStreakBase  = 0;
+  hearts       = 3;
+  prizesEarned = [0, 0, 0, 0, 0];
+  recentNotes  = [];
+  gameActive   = false;
+  startingLevel = 1;
+  const sel = document.getElementById('level-select');
+  if (sel) sel.value = '1';
+  setLevelSelectDisabled(false);
+  document.getElementById('streak-count').textContent = '0';
+  document.getElementById('points-count').textContent  = '0';
+  updateHearts();
+  updatePrizeDisplay();
+  const emo = document.getElementById('tempo-emoji');
+  if (emo) { emo.classList.remove('jumping','falling'); emo.textContent = LEVEL_EMOJIS[0]; emo.style.animation = ''; }
+  resetTempoPiano();
+  document.querySelectorAll('.hole').forEach(el => el.classList.remove('hole'));
+  document.getElementById('staff-panel').style.background = '';
+  setLevel(1);
+  showStartScreen();
+}
+
+// ════════════════════════════════════════════════
+//  PWA — APPLE TOUCH ICON (generated via canvas)
+// ════════════════════════════════════════════════
+function generateAppIcon() {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 180; canvas.height = 180;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#7ee8f5';
+    ctx.fillRect(0, 0, 180, 180);
+    ctx.font = '100px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🎵', 90, 85);
+    const link = document.createElement('link');
+    link.rel = 'apple-touch-icon';
+    link.href = canvas.toDataURL('image/png');
+    document.head.appendChild(link);
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+generateAppIcon();
+buildPiano();
+updateHearts();
+setLevel(1);
+showStartScreen();
+</script>
+<!-- Notification toast (lives outside game-area so it centres on screen) -->
+<div id="notification"></div>
+</body>
+</html>
